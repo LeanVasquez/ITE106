@@ -23,7 +23,7 @@ public class TextFile1TextAnalyzer
 			String[] wordArray = line.split("\\s+");
 			wordCount += wordArray.length; 
 			for (String word : wordArray) {
-				String trimmedWord = word.replaceAll("[!?.]*$", "");
+				String trimmedWord = word.replaceAll("[!?.,]*$", "");
 				int wordLength = trimmedWord.length();
 				
 				if (wordLength > longestWordLength) {
