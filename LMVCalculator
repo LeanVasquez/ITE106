@@ -1,0 +1,157 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+
+public class LMVCalculator extends JFrame implements ActionListener {
+	
+	private JTextField display;
+	private JTextArea history;
+	private double num1, num2, result;
+	private String operator;
+	private boolean calculationDone;
+	
+	public LMVCalculator() {
+		setTitle("Calculator");
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setSize(500, 500);
+		setLayout(new BorderLayout());
+		
+		display = new JTextField();
+		display.setEditable(false);
+		add(display, BorderLayout.NORTH);
+		
+		JPanel buttonPanel = new JPanel();
+		buttonPanel.setLayout(new GridLayout(5, 4));
+		
+		String[] buttons = {
+			"7", "8", "9", "/",
+			"4", "5", "6", "*",
+			"1", "2", "3", "-",
+			"0", ".", "=", "+",
+			"C"
+		};
+		
+		for (String button : buttons) {
+			JButton b = new JButton(button);
+			b.addActionListener(this);
+			buttonPanel.add(b);
+		}
+		
+		add(buttonPanel, BorderLayout.CENTER);
+		
+		JPanel historyPanel = new JPanel();
+		
+		history = new JTextArea(20, 20);
+		history.setSize(50, 100);
+		history.setEditable(false);
+		history.setText("History:\n");
+		
+		JScrollPane scrollPane = new JScrollPane(history);
+		historyPanel.add(scrollPane, BorderLayout.CENTER);
+		
+		add(historyPanel, BorderLayout.WEST);
+		
+		setVisible(true);
+	}
+
+	
+	public void actionPerformed(ActionEvent e) {
+		String input = e.getActionCommand();
+		
+		if (display.getText().length() <= 0 && input.equals("0")) {
+			return;
+		}
+		
+		if (input.equals("C")) {
+			num1 = 0;
+			num2 = 0;
+			display.setText("");
+		}
+		else if (Character.isDigit(input.charAt(0)) || input.equals(".")) {
+			if (calculationDone) {
+				display.setText("");
+				calculationDone = false;
+			}
+			
+			if (input.equals(".") && display.getText().contains(".")) {
+				return;
+			}
+			
+			display.setText(display.getText() + input);
+		}
+		else if (input.equals("=")) {
+			num2 = Double.parseDouble(display.getText());
+			performCalculation();
+			display.setText(String.valueOf(result));
+			
+			calculationDone = true;
+			
+			try {
+				String historyLine = saveHistory(
+						String.valueOf(num1) + " " +
+						operator + " " +
+						String.valueOf(num2) + " = " +
+						String.valueOf(result)
+						);
+				history.setText("History:\n" + historyLine);
+			}
+			catch (IOException e1) {
+				e1.printStackTrace();
+			}
+		}
+		else {
+			operator = input;
+			num1 = Double.parseDouble(display.getText());
+			display.setText("");
+			
+			calculationDone = false;
+		}
+	}
+	
+	public void performCalculation() {
+		switch (operator) {
+			case "+":
+				result = num1 + num2;
+				break;
+			case "-":
+				result = num1 - num2;
+				break;
+			case "*":
+				result = num1 * num2;
+				break;
+			case "/":
+				result = num1 / num2;
+				break;
+		}
+	}
+
+	public String saveHistory(String record) throws IOException {
+		BufferedReader reader = new BufferedReader(new FileReader("calculator_history.txt"));
+		
+		String line;
+		String history = "";
+		
+		while ((line = reader.readLine()) != null) {
+		    history += line + System.lineSeparator();
+		}
+		
+		history += record;
+		
+		BufferedWriter writer = new BufferedWriter(new FileWriter("calculator_history.txt"));
+		writer.write(history);
+		
+		reader.close();
+		writer.close();
+		
+		return history;
+	}
+	
+	public static void main(String[] args) throws IOException {
+		BufferedWriter writer = new BufferedWriter(new FileWriter("calculator_history.txt"));
+		writer.write("");
+		writer.close();
+		
+		new LMVCalculator();
+	}
+}
