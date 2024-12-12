@@ -1,0 +1,219 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class PayrollSystem {
+
+    private JFrame frame;
+    private JTextField txtEmployeeID, txtName, txtHourlyRate, txtHoursWorked, txtGrossPay, txtTaxRate, txtTaxDeduction, txtNetPay;
+    private JTextArea txtRecords;
+    private File file = new File("payroll.txt");
+
+    public PayrollSystem() {
+        // Pag Initialize ng JFrame
+        frame = new JFrame("Payroll System");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(600, 400);
+        frame.setLayout(new BorderLayout());
+
+        // Pag gawa ng Input Panel
+        JPanel inputPanel = new JPanel(new GridLayout(5, 2, 10, 10));
+        inputPanel.setBorder(BorderFactory.createTitledBorder("Employee Details"));
+
+        // Input Fields
+        JLabel lblEmployeeID = new JLabel("Employee ID:");
+        txtEmployeeID = new JTextField();
+        JLabel lblName = new JLabel("Name:");
+        txtName = new JTextField();
+        JLabel lblHourlyRate = new JLabel("Hourly Rate:");
+        txtHourlyRate = new JTextField();
+        JLabel lblHoursWorked = new JLabel("Hours Worked:");
+        txtHoursWorked = new JTextField();
+        JLabel lblTaxRate = new JLabel("Tax Rate (%):");
+        txtTaxRate = new JTextField("15"); // Default tax rate
+        JLabel lblGrossPay = new JLabel("Gross Pay:");
+        txtGrossPay = new JTextField();
+        txtGrossPay.setEditable(false);
+        JLabel lblTaxDeduction = new JLabel("Tax Deduction:");
+        txtTaxDeduction = new JTextField();
+        txtTaxDeduction.setEditable(false);
+        JLabel lblNetPay = new JLabel("Net Pay:");
+        txtNetPay = new JTextField();
+        txtNetPay.setEditable(false);
+
+        // Add fields to input panel
+        inputPanel.add(lblEmployeeID);
+        inputPanel.add(txtEmployeeID);
+        inputPanel.add(lblHourlyRate);
+        inputPanel.add(txtHourlyRate);
+		inputPanel.add(lblName);
+        inputPanel.add(txtName);
+        inputPanel.add(lblHoursWorked);
+        inputPanel.add(txtHoursWorked);
+        inputPanel.add(lblTaxRate);
+        inputPanel.add(txtTaxRate);
+        inputPanel.add(lblGrossPay);
+        inputPanel.add(txtGrossPay);
+        inputPanel.add(lblTaxDeduction);
+        inputPanel.add(txtTaxDeduction);
+        inputPanel.add(lblNetPay);
+        inputPanel.add(txtNetPay);
+
+        // Pag gawa ng Button Panel
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        JButton btnCalculate = new JButton("Calculate Pay");
+        JButton btnSave = new JButton("Save Record");
+        JButton btnUpdate = new JButton("Update Record");
+        JButton btnDelete = new JButton("Delete Record");
+        JButton btnDisplay = new JButton("Display Records");
+
+        buttonPanel.add(btnCalculate);
+        buttonPanel.add(btnSave);
+        buttonPanel.add(btnUpdate);
+        buttonPanel.add(btnDelete);
+        buttonPanel.add(btnDisplay);
+
+        // Output Panel
+        JPanel outputPanel = new JPanel(new BorderLayout());
+        outputPanel.setBorder(BorderFactory.createTitledBorder("Output"));
+        txtRecords = new JTextArea(10, 40);
+        txtRecords.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(txtRecords);
+        outputPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Add to Frame
+        frame.add(inputPanel, BorderLayout.NORTH);
+        frame.add(buttonPanel, BorderLayout.CENTER);
+        frame.add(outputPanel, BorderLayout.SOUTH);
+
+        // Button Listeners
+        btnCalculate.addActionListener(e -> calculatePay());
+        btnSave.addActionListener(e -> saveRecord());
+        btnUpdate.addActionListener(e -> updateRecord());
+        btnDelete.addActionListener(e -> deleteRecord());
+        btnDisplay.addActionListener(e -> displayRecords());
+
+        // Pag Display ng Records sa Startup
+        displayRecords();
+
+        frame.setVisible(true);
+    }
+
+    private void calculatePay() {
+        try {
+            double hourlyRate = Double.parseDouble(txtHourlyRate.getText());
+            double hoursWorked = Double.parseDouble(txtHoursWorked.getText());
+            double taxRate = Double.parseDouble(txtTaxRate.getText()) / 100;
+
+            double grossPay = hourlyRate * hoursWorked;
+            double taxDeduction = grossPay * taxRate;
+            double netPay = grossPay - taxDeduction;
+
+            txtGrossPay.setText(String.format("%.2f", grossPay));
+            txtTaxDeduction.setText(String.format("%.2f", taxDeduction));
+            txtNetPay.setText(String.format("%.2f", netPay));
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(frame, "Please enter valid numeric values.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void saveRecord() {
+        try (BufferedWriter writer = Files.newBufferedWriter(file.toPath(), StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
+            String record = String.join(",", txtEmployeeID.getText(), txtName.getText(), txtHourlyRate.getText(), txtHoursWorked.getText(), txtGrossPay.getText(), txtTaxDeduction.getText(), txtNetPay.getText());
+            writer.write(record);
+            writer.newLine();
+            displayRecords();
+            clearFields();
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(frame, "Error saving record.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void updateRecord() {
+        try {
+            List<String> lines = new ArrayList<>(Files.readAllLines(file.toPath()));
+            boolean updated = false;
+
+            for (int i = 0; i < lines.size(); i++) {
+                String[] data = lines.get(i).split(",");
+                if (data[0].equals(txtEmployeeID.getText())) {
+                    lines.set(i, String.join(",", txtEmployeeID.getText(), txtName.getText(), txtHourlyRate.getText(), txtHoursWorked.getText(), txtGrossPay.getText(), txtTaxDeduction.getText(), txtNetPay.getText()));
+                    updated = true;
+                    break;
+                }
+            }
+
+            if (updated) {
+                Files.write(file.toPath(), lines);
+                displayRecords();
+                clearFields();
+            } else {
+                JOptionPane.showMessageDialog(frame, "Record not found.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(frame, "Error updating record.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void deleteRecord() {
+        try {
+            List<String> lines = new ArrayList<>(Files.readAllLines(file.toPath()));
+            boolean deleted = lines.removeIf(line -> line.startsWith(txtEmployeeID.getText() + ","));
+
+            if (deleted) {
+                Files.write(file.toPath(), lines);
+                displayRecords();
+                clearFields();
+            } else {
+                JOptionPane.showMessageDialog(frame, "Record not found.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(frame, "Error deleting record.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void displayRecords() {
+		try (BufferedReader reader = Files.newBufferedReader(file.toPath())) {
+			txtRecords.setText(""); // Tatanggalin yung previous content
+			
+			// Para magkaroon ng Header sa records
+			txtRecords.append(String.format("%-12s | %-10s | %-12s | %-13s | %-10s | %-15s | %-10s%n",
+					"Employee ID", "Name", "Hourly Rate", "Hours Worked", "Gross Pay", "Tax Deduction", "Net Pay"));
+			txtRecords.append("---------------------------------------------------------------------------------------------------------------------------------------------\n");
+			
+			// Read and append each record
+			String line;
+			while ((line = reader.readLine()) != null) {
+				String[] data = line.split(",");
+				
+				// Check if the record has all required fields
+				if (data.length == 7) {
+					txtRecords.append(String.format("%-12s | %-10s | %-12s | %-13s | %-10s | %-15s | %-10s%n",
+							data[0], data[1], data[2], data[3], data[4], data[5], data[6]));
+				} else {
+					txtRecords.append("Malformed record: " + line + "\n"); // Log malformed records
+				}
+			}
+		} catch (IOException ex) {
+			txtRecords.setText("No records found.");
+		}
+	}
+
+    private void clearFields() {
+        txtEmployeeID.setText("");
+        txtName.setText("");
+        txtHourlyRate.setText("");
+        txtHoursWorked.setText("");
+        txtGrossPay.setText("");
+        txtTaxDeduction.setText("");
+        txtNetPay.setText("");
+    }
+
+    public static void main(String[] args) {
+        new PayrollSystem();
+    }
+}
